@@ -8,7 +8,7 @@ app.use(cors());
 app.use(express.json());
 
 app.use('/auth', require('./routes/auth.routes'));
-app.use('/usuario', require('./routes/usuario.routes'));
+app.use('/usuarios', require('./routes/usuario.routes'));
 app.use('/personas', require('./routes/persona.routes'));
 app.use('/tareas', require('./routes/tarea.routes'));
 app.use('/tags', require('./routes/tag.routes'));

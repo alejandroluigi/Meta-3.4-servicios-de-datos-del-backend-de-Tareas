@@ -9,5 +9,7 @@ router.put('/:id', auth, ctrl.update);
 router.delete('/:id', auth, ctrl.remove);
 router.post('/:tareaId/tags/:tagId', auth, ctrl.addTag);
 router.get('/:id/tags', auth, ctrl.getTags);
+router.get('/:id/personas', auth, ctrl.getPersonas);
+router.get('/buscar/:texto', auth, ctrl.buscar);
 
 module.exports = router;

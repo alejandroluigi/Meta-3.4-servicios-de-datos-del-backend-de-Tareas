@@ -1,0 +1,475 @@
+openapi: 3.0.3
+info:
+  title: API Gestión de Personas, Tareas, Tags y Usuarios
+  version: 1.0.0
+  description: >
+    API REST desarrollada con Node.js, Express, Sequelize y MySQL.
+    Permite gestionar usuarios, personas, tareas, tags y relaciones N:N.
+
+servers:
+  - url: http://localhost:3000
+    description: Servidor local desarrollo
+
+tags:
+  - name: Auth
+    description: Registro e inicio de sesión
+  - name: Usuarios
+    description: Administración de usuarios
+  - name: Personas
+    description: CRUD de personas
+  - name: Tareas
+    description: CRUD de tareas
+  - name: Tags
+    description: CRUD de tags
+  - name: Relaciones
+    description: Relaciones entre entidades
+
+paths:
+
+  /auth/register:
+    post:
+      tags: [Auth]
+      summary: Registrar usuario
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterInput'
+            example:
+              nombre: Alex
+              email: alex@test.com
+              password: 123456
+      responses:
+        '201':
+          description: Usuario creado correctamente
+          content:
+            application/json:
+              example:
+                success: true
+                message: Usuario registrado
+
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Iniciar sesión
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginInput'
+            example:
+              email: alex@test.com
+              password: 123456
+      responses:
+        '200':
+          description: Login exitoso
+          content:
+            application/json:
+              example:
+                token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9
+
+        '401':
+          description: Credenciales inválidas
+
+  /usuarios:
+    get:
+      tags: [Usuarios]
+      summary: Listar usuarios
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Lista de usuarios
+
+  /usuarios/{id}:
+    get:
+      tags: [Usuarios]
+      summary: Obtener usuario por ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/id'
+      responses:
+        '200':
+          description: Usuario encontrado
+
+        '404':
+          description: Usuario no encontrado
+
+    put:
+      tags: [Usuarios]
+      summary: Modificar usuario
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/id'
+      requestBody:
+        content:
+          application/json:
+            example:
+              nombre: Alejandro
+              email: nuevo@test.com
+      responses:
+        '200':
+          description: Usuario actualizado
+
+    delete:
+      tags: [Usuarios]
+      summary: Eliminar usuario
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/id'
+      responses:
+        '200':
+          description: Usuario eliminado
+
+  /usuarios/{id}/activar:
+    patch:
+      tags: [Usuarios]
+      summary: Activar usuario
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/id'
+      responses:
+        '200':
+          description: Usuario activado
+
+  /usuarios/{id}/desactivar:
+    patch:
+      tags: [Usuarios]
+      summary: Desactivar usuario
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/id'
+      responses:
+        '200':
+          description: Usuario desactivado
+
+  /personas:
+    get:
+      tags: [Personas]
+      summary: Listar personas
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Lista de personas
+
+    post:
+      tags: [Personas]
+      summary: Crear persona
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PersonaInput'
+            example:
+              nombre: Juan
+              apellido: Pérez
+              email: juan@test.com
+      responses:
+        '201':
+          description: Persona creada
+
+  /personas/{id}:
+    get:
+      tags: [Personas]
+      summary: Obtener persona
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/id'
+      responses:
+        '200':
+          description: Persona encontrada
+
+    put:
+      tags: [Personas]
+      summary: Actualizar persona
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/id'
+      responses:
+        '200':
+          description: Persona actualizada
+
+    delete:
+      tags: [Personas]
+      summary: Eliminar persona
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/id'
+      responses:
+        '200':
+          description: Persona eliminada
+
+  /personas/{personaId}/tareas/{tareaId}:
+    post:
+      tags: [Relaciones]
+      summary: Asociar persona con tarea
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: personaId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: tareaId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Relación creada
+
+  /personas/{id}/tareas:
+    get:
+      tags: [Relaciones]
+      summary: Obtener tareas de una persona
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/id'
+      responses:
+        '200':
+          description: Lista de tareas
+
+  /personas/{id}/tags:
+    get:
+      tags: [Relaciones]
+      summary: Obtener tags relacionados con una persona
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/id'
+      responses:
+        '200':
+          description: Lista de tags
+
+  /tareas:
+    get:
+      tags: [Tareas]
+      summary: Listar tareas
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Lista de tareas
+
+    post:
+      tags: [Tareas]
+      summary: Crear tarea
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TareaInput'
+            example:
+              titulo: Estudiar OpenAPI
+              completada: false
+      responses:
+        '201':
+          description: Tarea creada
+
+  /tareas/{id}:
+    get:
+      tags: [Tareas]
+      summary: Obtener tarea
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/id'
+      responses:
+        '200':
+          description: Tarea encontrada
+
+    put:
+      tags: [Tareas]
+      summary: Actualizar tarea
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/id'
+      responses:
+        '200':
+          description: Tarea actualizada
+
+    delete:
+      tags: [Tareas]
+      summary: Eliminar tarea
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/id'
+      responses:
+        '200':
+          description: Tarea eliminada
+
+  /tareas/{tareaId}/tags/{tagId}:
+    post:
+      tags: [Relaciones]
+      summary: Asociar tarea con tag
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Relación creada
+
+  /tareas/{id}/tags:
+    get:
+      tags: [Relaciones]
+      summary: Obtener tags de una tarea
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Lista de tags
+
+  /tags:
+    get:
+      tags: [Tags]
+      summary: Listar tags
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Lista de tags
+
+    post:
+      tags: [Tags]
+      summary: Crear tag
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TagInput'
+            example:
+              nombre: Urgente
+      responses:
+        '201':
+          description: Tag creado
+
+  /tags/{id}:
+    get:
+      tags: [Tags]
+      summary: Obtener tag
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Tag encontrado
+
+    put:
+      tags: [Tags]
+      summary: Actualizar tag
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Tag actualizado
+
+    delete:
+      tags: [Tags]
+      summary: Eliminar tag
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Tag eliminado
+
+  /tags/{id}/personas:
+    get:
+      tags: [Relaciones]
+      summary: Obtener personas relacionadas con un tag
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Lista de personas
+
+  /tags/{id}/tareas:
+    get:
+      tags: [Relaciones]
+      summary: Obtener tareas relacionadas con un tag
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Lista de tareas
+
+components:
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    id:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+
+  schemas:
+
+    RegisterInput:
+      type: object
+      required: [nombre, email, password]
+      properties:
+        nombre:
+          type: string
+        email:
+          type: string
+        password:
+          type: string
+
+    LoginInput:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+
+    PersonaInput:
+      type: object
+      properties:
+        nombre:
+          type: string
+        apellido:
+          type: string
+        email:
+          type: string
+
+    TareaInput:
+      type: object
+      properties:
+        titulo:
+          type: string
+        completada:
+          type: boolean
+
+    TagInput:
+      type: object
+      properties:
+        nombre:
+          type: string

@@ -28,3 +28,9 @@ exports.getPersonas = async (req,res)=>
     include:{model:Tarea,include:Persona}
   })
 );
+
+exports.getTareas = async (req,res)=>{
+  res.json(await Tag.findByPk(req.params.id,{
+    include:Tarea
+  }));
+};

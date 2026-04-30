@@ -21,6 +21,6 @@ exports.login = async (req,res)=>{
  if(!user || !user.activo) return res.status(401).json({error:'Usuario inválido'});
  const ok = await bcrypt.compare(password,user.password);
  if(!ok) return res.status(401).json({error:'Credenciales incorrectas'});
- const token = jwt.sign({id:user.id},process.env.JWT_SECRET,{expiresIn:'1h'});
+ const token = jwt.sign({id:user.id},process.env.JWT_SECRET,{expiresIn:'2h'});
  res.json({token});
 };

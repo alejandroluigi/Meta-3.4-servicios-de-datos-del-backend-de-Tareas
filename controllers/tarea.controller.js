@@ -32,3 +32,20 @@ exports.addTag = async (req,res)=>{
 
 exports.getTags = async (req,res)=>
   res.json(await Tarea.findByPk(req.params.id,{include:Tag}));
+
+exports.getPersonas = async (req,res)=>{
+ res.json(await Tarea.findByPk(req.params.id,{
+   include: Persona
+ }));
+};
+
+exports.buscar = async (req,res)=>{
+ const data = await Tarea.findAll({
+   where:{
+     titulo:{
+       [Op.like]: `%${req.params.texto}%`
+     }
+   }
+ });
+ res.json(data);
+};
