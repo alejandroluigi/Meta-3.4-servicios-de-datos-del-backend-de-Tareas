@@ -16,6 +16,16 @@ module.exports = {
           key:'id'
         }
       },
+      personaId: {
+        type: Sequelize.INTEGER,
+        allowNull: true,
+        references: {
+          model: 'Personas',
+          key: 'id'
+        },
+        onUpdate: 'CASCADE',
+        onDelete: 'SET NULL'
+      },
       titulo: {
         type: Sequelize.STRING
       },

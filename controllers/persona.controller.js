@@ -1,10 +1,21 @@
 const { Persona, Tarea, Tag } = require('../models');
+const { Op } = require('sequelize');
 
 exports.getAll = async (req,res)=>
   res.json(await Persona.findAll());
 
-exports.getById = async (req,res)=>
-  res.json(await Persona.findByPk(req.params.id));
+exports.getById = async (req, res) => {
+  try {
+    const data = await Persona.findByPk(req.params.id);
+
+    if (!data)
+      return res.status(404).json({ error: 'No encontrado' });
+
+    res.json(data);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
 
 exports.create = async (req,res)=>
   res.status(201).json(await Persona.create(req.body));
@@ -23,18 +34,67 @@ exports.remove = async (req,res)=>{
   res.json({success:true});
 };
 
-exports.addTarea = async (req,res)=>{
-  const p=await Persona.findByPk(req.params.personaId);
-  const t=await Tarea.findByPk(req.params.tareaId);
-  await p.addTarea(t);res.json({success:true}
-  );
+exports.addTarea = async (req, res) => {
+  try {
+    const p = await Persona.findByPk(req.params.personaId);
+    const t = await Tarea.findByPk(req.params.tareaId);
+
+    if (!p || !t)
+      return res.status(404).json({ error: 'Persona o tarea no existe' });
+
+    t.personaId = p.id;
+    await t.save();
+
+    res.json({ success: true });
+
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 };
 
-exports.getTareas = async (req,res)=>
-  res.json(await Persona.findByPk(req.params.id,{include:Tarea}));
+exports.getTareas = async (req, res) => {
+
+  const data = await Persona.findByPk(req.params.id, {
+    include: {
+      model: Tarea,
+      as: 'tareas'
+    }
+  });
+
+  res.json(data);
+
+};
 
 exports.getTags = async (req,res)=>
   res.json(await Persona.findByPk(req.params.id,{
     include:{model:Tarea,include:Tag}
   })
 );
+
+exports.removeTarea = async (req, res) => {
+  const p = await Persona.findByPk(req.params.personaId);
+  const t = await Tarea.findByPk(req.params.tareaId);
+
+  if (!t) {
+    return res.status(404).json({
+      error: 'Tarea no encontrada'
+    });
+  }
+
+  t.personaId = null;
+  await t.save();
+
+  res.json({ success: true });
+};
+
+exports.buscar = async (req, res) => {
+  const data = await Persona.findAll({
+    where: {
+      nombre: {
+        [Op.like]: `%${req.params.texto}%`
+      }
+    }
+  });
+
+  res.json(data);
+};

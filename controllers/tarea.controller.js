@@ -1,4 +1,5 @@
 const { Tarea, Tag } = require('../models');
+const { Op } = require('sequelize');
 
 exports.getAll = async (req,res)=>
   res.json(await Tarea.findAll());
@@ -33,19 +34,41 @@ exports.addTag = async (req,res)=>{
 exports.getTags = async (req,res)=>
   res.json(await Tarea.findByPk(req.params.id,{include:Tag}));
 
-exports.getPersonas = async (req,res)=>{
- res.json(await Tarea.findByPk(req.params.id,{
-   include: Persona
- }));
+exports.getPersona = async (req, res) => {
+
+  const tarea = await Tarea.findByPk(req.params.id, {
+    include: {
+      model: Persona,
+      as: 'persona'
+    }
+  });
+
+  res.json(tarea);
+
 };
 
-exports.buscar = async (req,res)=>{
- const data = await Tarea.findAll({
-   where:{
-     titulo:{
-       [Op.like]: `%${req.params.texto}%`
-     }
-   }
- });
- res.json(data);
+exports.buscar = async (req, res) => {
+  try {
+    const data = await Tarea.findAll({
+      where: {
+        titulo: {
+          [Op.like]: `%${req.params.texto}%`
+        }
+      }
+    });
+
+    res.json(data);
+
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+exports.removeTag = async (req, res) => {
+  const t = await Tarea.findByPk(req.params.tareaId);
+  const g = await Tag.findByPk(req.params.tagId);
+
+  await t.removeTag(g);
+
+  res.json({ success: true });
 };

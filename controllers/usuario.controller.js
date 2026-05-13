@@ -1,9 +1,16 @@
 const { Usuario } = require('../models');
 
-exports.getAll = async (req,res)=>{
- res.json(await Usuario.findAll({
-   attributes:{ exclude:['password'] }
- }));
+exports.getAll = async (req, res) => {
+  try {
+    const data = await Usuario.findAll({
+      attributes: { exclude: ['password'] }
+    });
+
+    res.json(data);
+
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 };
 
 exports.getById = async (req,res)=>{

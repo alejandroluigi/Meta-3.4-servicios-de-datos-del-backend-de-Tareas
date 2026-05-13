@@ -19,7 +19,7 @@ module.exports = {
       },
       password: {
         type: Sequelize.STRING,
-        allowNull: false
+        allowNull: true
       },
       activo: {
         type: Sequelize.BOOLEAN,

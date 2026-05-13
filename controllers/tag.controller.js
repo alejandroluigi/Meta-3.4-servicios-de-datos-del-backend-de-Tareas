@@ -3,8 +3,18 @@ const { Tag, Tarea, Persona } = require('../models');
 exports.getAll = async (req,res)=>
   res.json(await Tag.findAll());
 
-exports.getById = async (req,res)=>
-  res.json(await Tag.findByPk(req.params.id));
+exports.getById = async (req, res) => {
+  try {
+    const data = await Tag.findByPk(req.params.id);
+
+    if (!data)
+      return res.status(404).json({ error: 'No encontrado' });
+
+    res.json(data);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
 
 exports.create = async (req,res)=>
   res.status(201).json(await Tag.create(req.body));
