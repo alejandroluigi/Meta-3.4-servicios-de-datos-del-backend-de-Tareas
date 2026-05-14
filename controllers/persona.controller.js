@@ -65,11 +65,42 @@ exports.getTareas = async (req, res) => {
 
 };
 
-exports.getTags = async (req,res)=>
-  res.json(await Persona.findByPk(req.params.id,{
-    include:{model:Tarea,include:Tag}
-  })
-);
+exports.getTags = async (req, res) => {
+
+  try {
+
+    const data = await Persona.findByPk(
+      req.params.id,
+      {
+        include: [
+          {
+            model: Tarea,
+            as: 'tareas',
+
+            include: [
+              {
+                model: Tag,
+                as: 'Tags'
+              }
+            ]
+          }
+        ]
+      }
+    );
+
+    res.json(data);
+
+  } catch (error) {
+
+    console.error(error);
+
+    res.status(500).json({
+      error: error.message
+    });
+
+  }
+
+};
 
 exports.removeTarea = async (req, res) => {
   const p = await Persona.findByPk(req.params.personaId);

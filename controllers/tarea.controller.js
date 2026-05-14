@@ -1,4 +1,4 @@
-const { Tarea, Tag } = require('../models');
+const { Tarea, Tag, Persona } = require('../models');
 const { Op } = require('sequelize');
 
 exports.getAll = async (req,res)=>

@@ -33,11 +33,41 @@ exports.remove = async (req,res)=>{
   res.json({success:true});
 };
 
-exports.getPersonas = async (req,res)=>
-  res.json(await Tag.findByPk(req.params.id,{
-    include:{model:Tarea,include:Persona}
-  })
-);
+exports.getPersonas = async (req, res) => {
+
+  try {
+
+    const data = await Tag.findByPk(
+      req.params.id,
+      {
+        include: [
+          {
+            model: Tarea,
+
+            include: [
+              {
+                model: Persona,
+                as: 'persona'
+              }
+            ]
+          }
+        ]
+      }
+    );
+
+    res.json(data);
+
+  } catch (error) {
+
+    console.error(error);
+
+    res.status(500).json({
+      error: error.message
+    });
+
+  }
+
+};
 
 exports.getTareas = async (req,res)=>{
   res.json(await Tag.findByPk(req.params.id,{

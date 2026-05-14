@@ -74,11 +74,10 @@ exports.googleLogin = (req, res) => {
 exports.googleCallback = async (req, res) => {
   const { code } = req.query;
 
-  console.log('CODE:', code); // 👈 agrega esto
+  console.log('CODE:', code);
 
   try {
     const { tokens } = await oauth2Client.getToken(code);
-
     oauth2Client.setCredentials(tokens);
 
     const oauth2 = google.oauth2({
@@ -87,33 +86,53 @@ exports.googleCallback = async (req, res) => {
     });
 
     const { data } = await oauth2.userinfo.get();
+    
+    if (!data.email.endsWith('@uabc.edu.mx')) {
+      return res.status(403).json({
+        error: 'Solo cuentas institucionales uabc.edu.mx'
+      });
+    }
 
-    // 🔍 Buscar usuario
+    // Buscar usuario
     let user = await Usuario.findOne({
       where: { email: data.email }
     });
 
-    // 🆕 Crear si no existe
+    // Si no existe el usuario, no accede al frontend
     if (!user) {
-      user = await Usuario.create({
-        email: data.email,
-        password: null,
-        activo: true
+      return res.status(403).json({
+        error: 'Usuario no registrado en el sistema'
+      });
+    }
+    
+    if (!user.activo) {
+      return res.status(403).json({
+        error: 'Usuario inactivo'
       });
     }
 
-    // 🔐 Generar JWT
+    // Generar JWT
     const token = jwt.sign(
       { id: user.id },
       process.env.JWT_SECRET,
       { expiresIn: '2h' }
     );
 
-    // 🔁 Redirigir al frontend
+    // Redirigir al frontend
     res.redirect(`https://localhost:3000/oauth-success?token=${token}`);
 
   } catch (error) {
-    console.error('ERROR GOOGLE:', error); // 👈 importante
+    console.error('ERROR GOOGLE:', error);
     res.status(500).json({ error: error.message });
   }
+}
+
+exports.me = async (req, res) => {
+  const user = await Usuario.findByPk(req.user.id);
+
+  if (!user || !user.activo) {
+    return res.status(403).json({ error: 'No autorizado' });
+  }
+
+  res.json(user);
 };
