@@ -1,24 +1,39 @@
 'use strict';
-const {
+import {
   Model
-} = require('sequelize');
-module.exports = (sequelize, DataTypes) => {
+} from 'sequelize';
+export default (sequelize, DataTypes) => {
   class Usuario extends Model {
-    /**
-     * Helper method for defining associations.
-     * This method is not a part of Sequelize lifecycle.
-     * The `models/index` file will call this method automatically.
-     */
+    
     static associate(models) {
       // define association here
       Usuario.hasMany(models.Tarea, {
         foreignKey: 'usuarioId',
         as: 'tareas'
       });
+      Usuario.belongsTo(models.Persona, {
+        foreignKey: 'personaId',
+        as: 'persona'
+      });
+      models.Persona.hasOne(Usuario, {
+        foreignKey: 'personaId',
+        as: 'usuario'
+      });
     }
   }
   Usuario.init({
     nombre: DataTypes.STRING,
+    personaId: {
+      type: DataTypes.INTEGER,
+      references: {
+        model: 'Personas',
+        key: 'id'
+      }
+    },
+    rol:{
+      type: DataTypes.STRING,
+      defaultValue:'USER'
+    },
     email: {
       type: DataTypes.STRING,
       unique: true,
@@ -32,8 +47,10 @@ module.exports = (sequelize, DataTypes) => {
   }, {
     sequelize,
     modelName: 'Usuario',
-    tableName:'usuarios',
+    //tableName:'usuarios',
+    tableName:'Usuarios',
     freezeTableName:true
   });
   return Usuario;
 };
+/* */

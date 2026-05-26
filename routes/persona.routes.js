@@ -1,6 +1,7 @@
-const router = require('express').Router();
-const auth = require('../middleware/auth');
-const ctrl = require('../controllers/persona.controller');
+import { Router } from 'express';
+import auth from '../middleware/auth.js';
+import * as ctrl from '../controllers/persona.controller.js';
+const router = Router();
 
 router.get('/', auth, ctrl.getAll);
 router.get('/:id', auth, ctrl.getById);
@@ -13,4 +14,4 @@ router.get('/:id/tags', auth, ctrl.getTags);
 router.get('/buscar/:texto', auth, ctrl.buscar);
 router.delete('/:personaId/tareas/:tareaId', auth, ctrl.removeTarea);
 
-module.exports = router;
+export default router;

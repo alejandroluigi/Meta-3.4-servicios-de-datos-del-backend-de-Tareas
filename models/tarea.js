@@ -1,14 +1,10 @@
 'use strict';
-const {
+import {
   Model
-} = require('sequelize');
-module.exports = (sequelize, DataTypes) => {
+} from 'sequelize';
+export default (sequelize, DataTypes) => {
   class Tarea extends Model {
-    /**
-     * Helper method for defining associations.
-     * This method is not a part of Sequelize lifecycle.
-     * The `models/index` file will call this method automatically.
-     */
+    
     static associate(models) {
       Tarea.belongsTo(models.Persona, {
         foreignKey: 'personaId',
@@ -28,7 +24,14 @@ module.exports = (sequelize, DataTypes) => {
   }
   Tarea.init({
     titulo: DataTypes.STRING,
+    personaId:{
+      type:DataTypes.INTEGER
+    },
+    usuarioId:{
+      type:DataTypes.INTEGER
+    },
     completada: DataTypes.BOOLEAN
+    
   }, {
     sequelize,
     modelName: 'Tarea',

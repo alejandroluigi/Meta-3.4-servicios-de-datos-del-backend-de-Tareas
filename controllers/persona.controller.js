@@ -1,10 +1,11 @@
-const { Persona, Tarea, Tag } = require('../models');
-const { Op } = require('sequelize');
+import db from '../models/index.js';
+const { Persona, Tarea, Tag } = db;
+import { Op } from 'sequelize';
 
-exports.getAll = async (req,res)=>
+export const getAll = async (req,res)=>
   res.json(await Persona.findAll());
 
-exports.getById = async (req, res) => {
+export const getById = async (req, res) => {
   try {
     const data = await Persona.findByPk(req.params.id);
 
@@ -17,24 +18,24 @@ exports.getById = async (req, res) => {
   }
 };
 
-exports.create = async (req,res)=>
+export const create = async (req,res)=>
   res.status(201).json(await Persona.create(req.body));
 
-exports.update = async (req,res)=>{
+export const update = async (req,res)=>{
   await Persona.update(req.body,{
     where:{id:req.params.id}
   });
   res.json({success:true});
 };
 
-exports.remove = async (req,res)=>{
+export const remove = async (req,res)=>{
   await Persona.destroy({
     where:{id:req.params.id}
   });
   res.json({success:true});
 };
 
-exports.addTarea = async (req, res) => {
+export const addTarea = async (req, res) => {
   try {
     const p = await Persona.findByPk(req.params.personaId);
     const t = await Tarea.findByPk(req.params.tareaId);
@@ -52,7 +53,7 @@ exports.addTarea = async (req, res) => {
   }
 };
 
-exports.getTareas = async (req, res) => {
+export const getTareas = async (req, res) => {
 
   const data = await Persona.findByPk(req.params.id, {
     include: {
@@ -65,7 +66,7 @@ exports.getTareas = async (req, res) => {
 
 };
 
-exports.getTags = async (req, res) => {
+export const getTags = async (req, res) => {
 
   try {
 
@@ -102,7 +103,7 @@ exports.getTags = async (req, res) => {
 
 };
 
-exports.removeTarea = async (req, res) => {
+export const removeTarea = async (req, res) => {
   const p = await Persona.findByPk(req.params.personaId);
   const t = await Tarea.findByPk(req.params.tareaId);
 
@@ -118,7 +119,7 @@ exports.removeTarea = async (req, res) => {
   res.json({ success: true });
 };
 
-exports.buscar = async (req, res) => {
+export const buscar = async (req, res) => {
   const data = await Persona.findAll({
     where: {
       nombre: {

@@ -1,133 +1,119 @@
-const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
-const { Usuario } = require('../models');
-const { google } = require('googleapis');
+import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
+import db from '../models/index.js';
+const { Persona, Usuario } = db;
 
-const oauth2Client = new google.auth.OAuth2(
-  process.env.GOOGLE_CLIENT_ID,
-  process.env.GOOGLE_CLIENT_SECRET,
-  process.env.GOOGLE_REDIRECT_URI
-);
+export const register = async (req, res) => {
 
-/*hooks:{
- beforeCreate: async(usuario)=>{
-   usuario.password = await bcrypt.hash(usuario.password,10);
- }
-}*/
-
-/*
-exports.register = async (req,res)=>{
- const {email,password}=req.body;
- const hash = await bcrypt.hash(password,10);
- const user = await Usuario.create({email,password:hash,activo:true});
- res.status(201).json(user);
-};*/
-
-exports.register = async (req, res) => {
   try {
-    const { email, password } = req.body;
 
-    if (!email || !password)
-      return res.status(400).json({ error: 'Datos incompletos' });
+    const { nombre, email, password } = req.body;
 
-    const existe = await Usuario.findOne({ where: { email } });
-    if (existe)
-      return res.status(400).json({ error: 'Usuario ya existe' });
+    const existe = await Usuario.findOne({
+      where: { email }
+    });
 
+    if (existe) {
+      return res.status(400).json({
+        error: 'Usuario ya existe'
+      });
+    }
+
+    // CREAR PERSONA
+    const persona = await Persona.create({
+      nombre,
+      email
+    });
+
+    // HASH PASSWORD
     const hash = await bcrypt.hash(password, 10);
 
+    // CREAR USUARIO
     const user = await Usuario.create({
+      nombre,
       email,
       password: hash,
-      activo: true
+      activo: true,
+      personaId: persona.id,
+      rol:'USER',
+      activo:true
     });
 
-    res.status(201).json({
-      id: user.id,
-      email: user.email
-    });
+    res.status(201).json(user);
 
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.log(error);
+    console.log(error.errors);
+
+    res.status(500).json({
+      error: error.message,
+      details:error.errors
+    });
   }
 };
 
-exports.login = async (req,res)=>{
- const {email,password}=req.body;
- const user = await Usuario.findOne({where:{email}});
- if(!user || !user.activo) return res.status(401).json({error:'Usuario inválido'});
- const ok = await bcrypt.compare(password,user.password);
- if(!ok) return res.status(401).json({error:'Credenciales incorrectas'});
- const token = jwt.sign({id:user.id},process.env.JWT_SECRET,{expiresIn:'2h'});
- res.json({token});
-};
+export const login = async (req,res)=>{
 
-exports.googleLogin = (req, res) => {
-  const url = oauth2Client.generateAuthUrl({
-    access_type: 'offline',
-    scope: ['profile', 'email']
+  const {email,password}=req.body;
+  const user = await Usuario.findOne({where:{email}});
+  
+  if(!user || !user.activo) return res.status(401).json({error:'Usuario inválido'});
+  
+  const ok = await bcrypt.compare(password,user.password);
+  
+  if(!ok) return res.status(401).json({error:'Credenciales incorrectas'});
+  
+  // CSRF TOKEN
+  const csrfToken = crypto
+    .randomBytes(32)
+    .toString('hex');
+
+    // HASH
+  const csrfHash = crypto
+    .createHash('sha256')
+    .update(csrfToken)
+    .digest('hex');
+
+  // JWT
+    const token = jwt.sign({
+    id: user.id,
+    rol: user.rol,
+    personaId: user.personaId,
+    csrf_hash:csrfHash
+  },
+  
+  process.env.JWT_SECRET,
+  {
+    expiresIn: '2h'
+  });
+  //res.json({token});
+  // COOKIE JWT
+  res.cookie('access_token', token, {
+
+    httpOnly:true,
+    secure:true,
+    sameSite:'strict',
+    //maxAge: 2 * 60 * 60 * 1000
   });
 
-  res.redirect(url);
+  // COOKIE CSRF
+  res.cookie('csrf_token', csrfToken, {
+
+    httpOnly:false,
+    secure:true,
+    sameSite:'strict',
+
+    //maxAge: 2 * 60 * 60 * 1000
+  });
+
+  res.json({
+    //success:true
+    ok:true
+  });
 };
 
-exports.googleCallback = async (req, res) => {
-  const { code } = req.query;
-
-  console.log('CODE:', code);
-
-  try {
-    const { tokens } = await oauth2Client.getToken(code);
-    oauth2Client.setCredentials(tokens);
-
-    const oauth2 = google.oauth2({
-      auth: oauth2Client,
-      version: 'v2'
-    });
-
-    const { data } = await oauth2.userinfo.get();
-    
-    if (!data.email.endsWith('@uabc.edu.mx')) {
-      return res.status(403).json({
-        error: 'Solo cuentas institucionales uabc.edu.mx'
-      });
-    }
-
-    // Buscar usuario
-    let user = await Usuario.findOne({
-      where: { email: data.email }
-    });
-
-    // Si no existe el usuario, no accede al frontend
-    if (!user) {
-      return res.status(403).json({
-        error: 'Usuario no registrado en el sistema'
-      });
-    }
-    
-    if (!user.activo) {
-      return res.status(403).json({
-        error: 'Usuario inactivo'
-      });
-    }
-
-    // Generar JWT
-    const token = jwt.sign(
-      { id: user.id },
-      process.env.JWT_SECRET,
-      { expiresIn: '2h' }
-    );
-
-    // Redirigir al frontend
-    res.redirect(`https://localhost:3000/oauth-success?token=${token}`);
-
-  } catch (error) {
-    console.error('ERROR GOOGLE:', error);
-    res.status(500).json({ error: error.message });
-  }
-}
-
-exports.me = async (req, res) => {
+export const me = async (req, res) => {
   const user = await Usuario.findByPk(req.user.id);
 
   if (!user || !user.activo) {
@@ -135,4 +121,15 @@ exports.me = async (req, res) => {
   }
 
   res.json(user);
+};
+
+export const logout = async (req,res)=>{
+
+  res.clearCookie('access_token');
+
+  res.clearCookie('csrf_token');
+
+  res.json({
+    success:true
+  });
 };

@@ -1,11 +1,11 @@
-const router = require('express').Router();
-const auth = require('../middleware/auth');
-const ctrl = require('../controllers/auth.controller');
+import { Router } from 'express';
+import auth from '../middleware/auth.js';
+import * as ctrl from '../controllers/auth.controller.js';
+const router = Router();
 
 router.post('/register', ctrl.register);
+router.post('/logout', ctrl.logout);
 router.post('/login', ctrl.login);
-router.get('/google/login', ctrl.googleLogin);
-router.get('/google/callback', ctrl.googleCallback);
 router.get('/me', auth, ctrl.me);
-
-module.exports = router;
+/**/
+export default router;

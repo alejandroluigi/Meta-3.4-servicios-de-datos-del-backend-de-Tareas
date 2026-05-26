@@ -1,60 +1,188 @@
-const { Tarea, Tag, Persona } = require('../models');
-const { Op } = require('sequelize');
+import db from '../models/index.js';
+const { Tarea, Tag, Persona } = db;
+import { Op } from 'sequelize';
 
-exports.getAll = async (req,res)=>
-  res.json(await Tarea.findAll());
+export const getAll = async (req, res) => {
 
-exports.getById = async (req,res)=>
-  res.json(await Tarea.findByPk(req.params.id));
+  const tareas = await Tarea.findAll({
+    where: {
+      personaId: req.user.personaId
+    },
+    include: [Tag]
+  });
 
-exports.create = async (req,res)=>
-  res.status(201).json(await Tarea.create(req.body));
+  res.json(tareas);
+};
 
-exports.update = async (req,res)=>{
+export const getById = async (req,res)=>{
+
+  const tarea = await Tarea.findOne({
+
+    where:{
+      id:req.params.id,
+      personaId:req.user.personaId
+    },
+
+    include:[Tag]
+  });
+
+  if(!tarea){
+
+    return res.status(404).json({
+      error:'No encontrada'
+    });
+  }
+
+  res.json(tarea);
+};
+
+export const create = async (req, res) => {
+
+  try{
+
+    const tarea = await Tarea.create({
+
+      titulo:req.body.titulo,
+      completada:req.body.completada,
+      personaId:req.user.personaId,
+      usuarioId:req.user.id
+    });
+
+    res.status(201).json(tarea);
+
+  }catch(error){
+
+    console.log(error);
+
+    res.status(500).json({
+      error:error.message
+    });
+  }
+};
+
+export const update = async (req,res)=>{
+
+  const tarea = await Tarea.findOne({
+
+    where:{
+      id:req.params.id,
+      personaId:req.user.personaId
+    }
+  });
+  
+  if(!tarea){
+    return res.status(404).json({
+      error:'No encontrada'
+    });
+  }
   await Tarea.update(req.body,{
     where:{id:req.params.id}
   });
   res.json({success:true});
 };
 
-exports.remove = async (req,res)=>{
+export const remove = async (req,res)=>{
+
+  const tarea = await Tarea.findOne({
+
+    where:{
+      id:req.params.id,
+      personaId:req.user.personaId
+    },
+    include:[Tag]
+  });
+
+  if(!tarea){
+    return res.status(404).json({
+      error:'No encontrada'
+    });
+  }
+
+  await tarea.setTags([]);
+
   await Tarea.destroy({
     where:{id:req.params.id}
   });
   res.json({success:true});
 };
 
-exports.addTag = async (req,res)=>{
-  const t=await Tarea.findByPk(req.params.tareaId);
+export const addTag = async (req,res)=>{
+  const t = await Tarea.findOne({
+    where:{
+      id:req.params.tareaId,
+      personaId:req.user.personaId
+    }
+  });
+
+  if(!t){
+
+    return res.status(404).json({
+      error:'Tarea no encontrada'
+    });
+  }
+
   const g=await Tag.findByPk(req.params.tagId);
+
+  if(!g){
+
+    return res.status(404).json({
+      error:'Tag no encontrado'
+    });
+  }
+
   await t.addTag(g);
   res.json({success:true});
 };
 
-exports.getTags = async (req,res)=>
-  res.json(await Tarea.findByPk(req.params.id,{include:Tag}));
+export const getTags = async (req,res)=>{
 
-exports.getPersona = async (req, res) => {
+  const tarea = await Tarea.findByPk(
+    req.params.id,
+    {
+      include:[Tag]
+    }
+  );
+
+  if(!tarea){
+
+    return res.status(404).json({
+      error:'Tarea no encontrada'
+    });
+  }
+
+  res.json(tarea.Tags);
+};
+
+export const getPersona = async (req, res) => {
 
   const tarea = await Tarea.findByPk(req.params.id, {
-    include: {
+    include: [{
       model: Persona,
       as: 'persona'
-    }
+    }]
   });
 
-  res.json(tarea);
+  if(!tarea || !tarea.persona){
+    return res.status(404).json({
+      error:'Persona no encontrada'
+    });
+  }
+
+  res.json(tarea.persona);
 
 };
 
-exports.buscar = async (req, res) => {
+export const buscar = async (req, res) => {
   try {
     const data = await Tarea.findAll({
       where: {
+        personaId:req.user.personaId,
         titulo: {
           [Op.like]: `%${req.params.texto}%`
         }
-      }
+      },
+
+      include: [Tag]
     });
 
     res.json(data);
@@ -64,11 +192,73 @@ exports.buscar = async (req, res) => {
   }
 };
 
-exports.removeTag = async (req, res) => {
-  const t = await Tarea.findByPk(req.params.tareaId);
-  const g = await Tag.findByPk(req.params.tagId);
+export const removeTag = async (req, res) => {
+    const t = await Tarea.findOne({
+      where:{
+        id:req.params.tareaId,
+        personaId:req.user.personaId
+      }
+    });
 
-  await t.removeTag(g);
+    if(!t){
+      return res.status(404).json({
+        error:'Tarea no encontrada'
+      });
+    }
 
-  res.json({ success: true });
+    const g = await Tag.findByPk(req.params.tagId);
+    if(!g){
+      return res.status(404).json({
+        error:'Tag no encontrado'
+      });
+    }
+
+    await t.removeTag(g);
+    res.json({ success: true });
+};
+
+export const buscarPorTags = async (req,res)=>{
+
+  const { tags } = req.body;
+
+  const tareas = await Tarea.findAll({
+
+    where:{
+      personaId:req.user.personaId
+    },
+
+    include:[{
+      model:Tag,
+
+      where:{
+        nombre:{
+          [Op.in]: tags
+        }
+      }
+    }]
+  });
+
+  res.json(tareas);
+};
+
+export const buscarAdminPorTags = async (req,res)=>{
+
+  const { tags } = req.body;
+
+  const tareas = await Tarea.findAll({
+
+    include:[{
+
+      model:Tag,
+      required:true,
+
+      where:{
+        nombre:{
+          [Op.like]: `%${tags}%`
+        }
+      }
+    }]
+  });
+
+  res.json(tareas);
 };
