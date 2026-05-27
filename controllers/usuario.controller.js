@@ -35,57 +35,69 @@ export const update = async (req,res)=>{
 };
 
 export const remove = async (req,res)=>{
-  try{
-    const usuario = await Usuario.findByPk(
-      req.params.id,
-      {
-        include:[{
-          model:Persona,
-          as:'persona',
-          //required:true,
-          include:[{
-            model:Tarea,
-            as:'tareas',
 
-            include:[Tag]
-          }]
-        }]
-      }
+  try{
+
+    const usuario = await Usuario.findByPk(
+      req.params.id
     );
 
     if(!usuario){
+
       return res.status(404).json({
         error:'Usuario no encontrado'
       });
     }
 
-    // PERSONA
-    const persona = usuario.persona;
+    // tareas del usuario
+    const tareas = await Tarea.findAll({
 
-    if(persona){
-
-      // TAREAS
-      for(const tarea of persona.tareas){
-
-        // ELIMINAR RELACIONES TAREA-TAG
-        await tarea.setTags([]);
-
-        // ELIMINAR TAREA
-        await tarea.destroy();
+      where:{
+        usuarioId: usuario.id
       }
+    });
 
-      // ELIMINAR PERSONA
-      await persona.destroy();
+    // eliminar relaciones tarea-tag
+    for(const tarea of tareas){
+
+      await tarea.setTags([]);
     }
 
-    // ELIMINAR USUARIO
-    await Usuario.destroy({where:{id:req.params.id}});
-    res.json({success:true});
+    // eliminar tareas
+    await Tarea.destroy({
 
-  } catch(error){
+      where:{
+        usuarioId: usuario.id
+      }
+    });
+
+    // eliminar usuario PRIMERO
+    await Usuario.destroy({
+
+      where:{
+        id: usuario.id
+      }
+    });
+
+    // eliminar persona DESPUÉS
+    await Persona.destroy({
+
+      where:{
+        id: usuario.personaId
+      }
+    });
+
+    res.json({
+      success:true
+    });
+
+  }catch(error){
+
+    console.log(error);
+
     res.status(500).json({
       error:error.message
-     });
+    });
   }
 };
 
